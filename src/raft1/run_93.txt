@@ -1,0 +1,404 @@
+root@localhost:~/research-projs/distributed_system/MIT6.824/6.5840# cd /var/home/wr/res
+earch-projs/distributed_system/MIT6.824/6.5840/src/raft1 && for i in $(seq 1 100); do e
+cho "=== Run $i ==="; go test -race -run "3A|3B" 2>&1 | tail -3; done
+=== Run 1 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.379s
+=== Run 2 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.347s
+=== Run 3 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.646s
+=== Run 4 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.305s
+=== Run 5 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    60.836s
+=== Run 6 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.298s
+=== Run 7 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    58.604s
+=== Run 8 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    59.210s
+=== Run 9 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    58.659s
+=== Run 10 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.172s
+=== Run 11 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.801s
+=== Run 12 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    54.973s
+=== Run 13 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.773s
+=== Run 14 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.167s
+=== Run 15 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    58.324s
+=== Run 16 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    80 #Ops    0
+PASS
+ok      6.5840/raft1    59.076s
+=== Run 17 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.627s
+=== Run 18 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    80 #Ops    0
+PASS
+ok      6.5840/raft1    58.392s
+=== Run 19 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    60.445s
+=== Run 20 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.436s
+=== Run 21 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.499s
+=== Run 22 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.798s
+=== Run 23 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    56.914s
+=== Run 24 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    58.638s
+=== Run 25 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    80 #Ops    0
+PASS
+ok      6.5840/raft1    60.540s
+=== Run 26 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    59.838s
+=== Run 27 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.524s
+=== Run 28 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.844s
+=== Run 29 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.652s
+=== Run 30 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.566s
+=== Run 31 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.713s
+=== Run 32 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.450s
+=== Run 33 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.612s
+=== Run 34 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.554s
+=== Run 35 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.237s
+=== Run 36 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.476s
+=== Run 37 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.524s
+=== Run 38 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.213s
+=== Run 39 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    56.666s
+=== Run 40 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.617s
+=== Run 41 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    80 #Ops    0
+PASS
+ok      6.5840/raft1    58.525s
+=== Run 42 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.559s
+=== Run 43 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    59.979s
+=== Run 44 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    61.000s
+=== Run 45 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.615s
+=== Run 46 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    80 #Ops    0
+PASS
+ok      6.5840/raft1    57.175s
+=== Run 47 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.753s
+=== Run 48 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    56.459s
+=== Run 49 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.697s
+=== Run 50 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.420s
+=== Run 51 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    57.512s
+=== Run 52 ===
+  ... Passed --  time  2.0s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    58.579s
+=== Run 53 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    60.640s
+=== Run 54 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    80 #Ops    0
+PASS
+ok      6.5840/raft1    58.374s
+=== Run 55 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    60.955s
+=== Run 56 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.287s
+=== Run 57 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.560s
+=== Run 58 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    57.421s
+=== Run 59 ===
+  ... Passed --  time  2.0s #peers 3 #RPCs    70 #Ops    0
+PASS
+ok      6.5840/raft1    56.697s
+=== Run 60 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.752s
+=== Run 61 ===
+  ... Passed --  time  2.0s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    58.659s
+=== Run 62 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.496s
+=== Run 63 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    60.366s
+=== Run 64 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.891s
+=== Run 65 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.399s
+=== Run 66 ===
+  ... Passed --  time  2.0s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    56.564s
+=== Run 67 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.504s
+=== Run 68 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    60.543s
+=== Run 69 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.673s
+=== Run 70 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    70 #Ops    0
+PASS
+ok      6.5840/raft1    56.742s
+=== Run 71 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.400s
+=== Run 72 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    58.369s
+=== Run 73 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    55.216s
+=== Run 74 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.966s
+=== Run 75 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.261s
+=== Run 76 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.913s
+=== Run 77 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.665s
+=== Run 78 ===
+  ... Passed --  time  2.0s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    58.335s
+=== Run 79 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    58.831s
+=== Run 80 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.476s
+=== Run 81 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    60.247s
+=== Run 82 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    59.112s
+=== Run 83 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    58.728s
+=== Run 84 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.985s
+=== Run 85 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    54.867s
+=== Run 86 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    57.316s
+=== Run 87 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    57.136s
+=== Run 88 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.578s
+=== Run 89 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    72 #Ops    0
+PASS
+ok      6.5840/raft1    56.629s
+=== Run 90 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.500s
+=== Run 91 ===
+  ... Passed --  time  2.0s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.131s
+=== Run 92 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    58.451s
+=== Run 93 ===
+2026/02/22 10:27:51 apply error: commit index=52 server=2 1252713630947491826 != server=4 287926712796257467
+exit status 1
+FAIL    6.5840/raft1    57.008s
+=== Run 94 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    57.413s
+=== Run 95 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    74 #Ops    0
+PASS
+ok      6.5840/raft1    54.802s
+=== Run 96 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    60.283s
+=== Run 97 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.449s
+=== Run 98 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    59.660s
+=== Run 99 ===
+  ... Passed --  time  2.2s #peers 3 #RPCs    78 #Ops    0
+PASS
+ok      6.5840/raft1    60.378s
+=== Run 100 ===
+  ... Passed --  time  2.1s #peers 3 #RPCs    76 #Ops    0
+PASS
+ok      6.5840/raft1    56.690s  
+你看！出现了一个问题！跑了93才发现！

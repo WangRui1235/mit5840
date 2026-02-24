@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // 配置 1：启动 Coordinator
+            "name": "Debug Unreliable",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            // 指定 lock 的入口文件P
+            "program": "${workspaceFolder}/src/kvsrv1/",
+            // 指定运行时的当前目录
+            "cwd": "${workspaceFolder}/src/kvsrv1/",
+            //go test -v -run Reliable
+            "args": [
+                "-test.run=Unreliable"
+            ],
+
+            "showLog": true,
+            // 环境变量 (可选，如果需要调试输出)
+            "env": {
+                "DEBUG": "v"
+            },
+        }
+    ]
+}

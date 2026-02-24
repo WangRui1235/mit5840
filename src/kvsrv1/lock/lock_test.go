@@ -24,7 +24,7 @@ func oneClient(t *testing.T, me int, ck kvtest.IKVClerk, done chan struct{}) kvt
 	for i := 1; true; i++ {
 		select {
 		case <-done:
-			return kvtest.ClntRes{i, 0}
+			return kvtest.ClntRes{Nok: i, Nmaybe: 0}
 		default:
 			lk.Acquire()
 
