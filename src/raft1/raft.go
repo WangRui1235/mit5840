@@ -8,12 +8,13 @@ package raft
 
 import (
 	//	"bytes"
+	"bytes"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	//	"6.5840/labgob"
+	"6.5840/labgob"
 	"6.5840/labrpc"
 	"6.5840/raftapi"
 	"6.5840/tester1"
@@ -90,6 +91,13 @@ func (rf *Raft) persist() {
 	// e.Encode(rf.yyy)
 	// raftstate := w.Bytes()
 	// rf.persister.Save(raftstate, nil)
+	w := new(bytes.Buffer)
+	e := labgob.NewEncoder(w)
+	e.Encode(rf.currentTerm)
+	e.Encode(rf.votedFor)
+	e.Encode(rf.Log)
+	raftstate := w.Bytes()
+	rf.persister.Save(raftstate, nil)
 }
 
 // restore previously persisted state.
@@ -109,6 +117,20 @@ func (rf *Raft) readPersist(data []byte) {
 	//   rf.xxx = xxx
 	//   rf.yyy = yyy
 	// }
+	d := labgob.NewDecoder(bytes.NewBuffer(data))
+	var currentTerm int
+	var votedFor int
+	var Log []LogEntry
+	if d.Decode(&currentTerm) != nil ||
+		d.Decode(&votedFor) != nil ||
+		d.Decode(&Log) != nil {
+		// error...
+		panic("Decode Error")
+	} else {
+		rf.currentTerm = currentTerm
+		rf.votedFor = votedFor
+		rf.Log = Log
+	}
 }
 
 // how many bytes in Raft's persisted log?
@@ -149,6 +171,7 @@ type RequestVoteReply struct {
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
 	// Your code here (3A, 3B).
 	if args.Term < rf.currentTerm {
 		reply.Term = rf.currentTerm
@@ -231,6 +254,8 @@ type AppendEntriesReply struct {
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
+
 	if args.Term < rf.currentTerm {
 		reply.Term = rf.currentTerm
 		reply.Success = false
@@ -305,6 +330,7 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	// Your code here (3B).
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	defer rf.persist()
 	if rf.role == Leader {
 		index = len(rf.Log)
 		term = rf.currentTerm
@@ -347,6 +373,7 @@ func (rf *Raft) ticker() {
 		if rf.role == Leader {
 			// send heartbeats to all followers
 			if time.Since(rf.lastHeartbeat) > time.Duration(50)*time.Millisecond {
+				//warn : be careful when using rf.lastheartbeat, which has different meaning for leader and followers
 				rf.lastHeartbeat = time.Now()
 				rf.mu.Unlock()
 				go rf.sendAppendEntries()
@@ -359,6 +386,8 @@ func (rf *Raft) ticker() {
 				rf.currentTerm += 1
 				rf.votedFor = rf.me
 				rf.lastHeartbeat = time.Now()
+
+				rf.persist()
 				rf.mu.Unlock()
 				go rf.sendRequestVotes()
 				continue
@@ -421,6 +450,7 @@ func (rf *Raft) sendRequestVotes() {
 						rf.currentTerm = reply.Term
 						rf.role = Follower
 						rf.votedFor = -1
+						rf.persist()
 					}
 					rf.mu.Unlock()
 				}
@@ -516,6 +546,7 @@ func (rf *Raft) sendAppendEntries() {
 							rf.currentTerm = reply.Term
 							rf.role = Follower
 							rf.votedFor = -1
+							rf.persist()
 							rf.mu.Unlock()
 							return
 						}
