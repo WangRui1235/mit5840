@@ -431,6 +431,7 @@ func (rf *Raft) sendRequestVotes() {
 					if votes > len(rf.peers)/2 {
 						//warn: term/role may change
 						if rf.currentTerm != term || rf.role != Candidate {
+							// 	rf.persist()
 							rf.mu.Unlock()
 							return
 						}
@@ -440,6 +441,8 @@ func (rf *Raft) sendRequestVotes() {
 							rf.nextIndex[i] = len(rf.Log)
 							rf.matchIndex[i] = 0
 						}
+						//tests show that there is no need to persist here
+						//rf.persist()
 						rf.mu.Unlock()
 						go rf.sendAppendEntries()
 						return
@@ -515,6 +518,7 @@ func (rf *Raft) sendAppendEntries() {
 					rf.mu.Lock()
 					// warn: callback may cause term/role change, so we need to check term/role before processing reply
 					if rf.currentTerm != term || rf.role != Leader {
+						// rf.persist()
 						rf.mu.Unlock()
 						return
 					}
