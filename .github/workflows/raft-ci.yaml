@@ -21,7 +21,9 @@ jobs:
       with:
         go-version: '1.22'
     - name: Install dependencies
-      run: go get .
+      run: /
+        cd src
+        go get .
     - name: Run Tests
       run: |
         cd src/raft1
