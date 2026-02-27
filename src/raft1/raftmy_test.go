@@ -91,7 +91,7 @@ func (ts *Test) myone(cmd any, expectedServers int, retry bool) int {
 	return -1
 }
 
-func TestMyFigure8Unreliable3C(t *testing.T) {
+func TestMyFigure8Unreliable(t *testing.T) {
 	servers := 5
 	ts := makeTest(t, servers, false, false)
 	defer ts.cleanup()

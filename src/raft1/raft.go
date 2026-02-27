@@ -247,8 +247,10 @@ type AppendEntriesArgs struct {
 }
 
 type AppendEntriesReply struct {
-	Term    int
-	Success bool
+	Term          int
+	Success       bool
+	ConflictIndex int
+	ConflictTerm  int
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
@@ -269,8 +271,24 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 
 	rf.lastHeartbeat = time.Now()
 	reply.Term = rf.currentTerm
-	if args.PrevLogIndex >= len(rf.Log) || rf.Log[args.PrevLogIndex].Term != args.PrevLogTerm {
+
+	// the log is too short
+	if args.PrevLogIndex >= len(rf.Log) {
 		reply.Success = false
+		// the conflict index is equal to nextIndex, which is the index of the first entry that is not in the log
+		reply.ConflictIndex = len(rf.Log)
+		reply.ConflictTerm = -1
+		return
+	}
+	//
+	if rf.Log[args.PrevLogIndex].Term != args.PrevLogTerm {
+		reply.Success = false
+		reply.ConflictTerm = rf.Log[args.PrevLogIndex].Term
+		i := args.PrevLogIndex
+		for i > 0 && rf.Log[i].Term == reply.ConflictTerm {
+			i -= 1
+		}
+		reply.ConflictIndex = i + 1
 		return
 	}
 	// warn:empty Log as heartbeat should not overwrite existing log
@@ -554,7 +572,25 @@ func (rf *Raft) sendAppendEntries() {
 							rf.mu.Unlock()
 							return
 						}
-						rf.nextIndex[i] -= 1
+						// rf.nextIndex[i] -= 1
+						if reply.ConflictTerm == -1 {
+							rf.nextIndex[i] = reply.ConflictIndex
+						} else {
+							idx := -1
+							for j := len(rf.Log) - 1; j >= 0; j-- {
+								if rf.Log[j].Term == reply.ConflictTerm {
+									idx = j
+									break
+								}
+							}
+							if idx != -1 {
+								// the last entry in the log with the conflicting term is at index idx, so we can skip all entries after idx
+								rf.nextIndex[i] = idx + 1
+							} else {
+								// the whole term is not in the log, so we can skip all entries in that term
+								rf.nextIndex[i] = reply.ConflictIndex
+							}
+						}
 						if rf.nextIndex[i] < 1 {
 							rf.nextIndex[i] = 1
 						}
