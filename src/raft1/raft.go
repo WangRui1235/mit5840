@@ -165,9 +165,9 @@ func (rf *Raft) Snapshot(index int, snapshot []byte) {
 	if index <= rf.lastIncludedIndex {
 		return
 	}
-	rf.lastIncludedTerm = rf.Log[index-rf.lastIncludedIndex].Term
-	newLog := make([]LogEntry, len(rf.Log[index-rf.lastIncludedIndex:]))
-	copy(newLog, rf.Log[index-rf.lastIncludedIndex:])
+	rf.lastIncludedTerm = rf.Log[rf.logIndex(index)].Term
+	newLog := make([]LogEntry, len(rf.Log[rf.logIndex(index):]))
+	copy(newLog, rf.Log[rf.logIndex(index):])
 	rf.Log = newLog
 
 	rf.lastIncludedIndex = index
@@ -383,7 +383,18 @@ type InstallSnapshotReply struct {
 }
 
 func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 
+	reply.Term = rf.currentTerm
+
+	if args.Term < rf.currentTerm {
+		return
+	}
+}
+
+func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
+	return rf.peers[server].Call("Raft.InstallSnapshot", args, reply)
 }
 
 // the service using Raft (e.g. a k/v server) wants to start
