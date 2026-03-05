@@ -1,3 +1,5 @@
 /stress_logs
 raft.md
 porcupine-*
+stress_summary.txt
+/stress_tmp_results

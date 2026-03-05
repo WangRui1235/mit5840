@@ -17,7 +17,7 @@ echo "PID: $$"
 run_one() {
     i=$1
     logfile="$LOGDIR/run_$(printf '%04d' $i).txt"
-    go test -race -run "3A|3B" > "$logfile" 2>&1
+    go test -race -run "3A|3B|3C|3D" > "$logfile" 2>&1
     exit_code=$?
     if [ $exit_code -eq 0 ]; then
         echo "PASS" > "$TMPDIR_RESULTS/$i"

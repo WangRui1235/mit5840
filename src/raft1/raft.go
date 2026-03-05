@@ -390,7 +390,45 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 
 	if args.Term < rf.currentTerm {
 		return
+	} else if args.Term > rf.currentTerm {
+		rf.currentTerm = args.Term
+		rf.role = Follower
+		rf.votedFor = -1
 	}
+
+	rf.lastHeartbeat = time.Now()
+	if args.LastIncludedIndex <= rf.lastIncludedIndex {
+		return
+	}
+
+	if args.LastIncludedIndex < rf.lastlogIndex() &&
+		args.LastIncludedTerm == rf.Log[rf.logIndex(args.LastIncludedIndex)].Term {
+		index := rf.logIndex(args.LastIncludedIndex)
+		newLog := make([]LogEntry, len(rf.Log[index:]))
+		copy(newLog, rf.Log[index:])
+		rf.Log = newLog
+	} else {
+		// dummy entry to simplify the logic of log replication and commitment
+		rf.Log = []LogEntry{{Term: args.LastIncludedTerm, Command: nil}}
+	}
+	rf.lastIncludedIndex = args.LastIncludedIndex
+	rf.lastIncludedTerm = args.LastIncludedTerm
+	rf.commitIndex = max(rf.commitIndex, rf.lastIncludedIndex)
+	// applier may try to apply entries that are already compacted, so we need to update lastApplied to avoid applying compacted entries
+	rf.lastApplied = max(rf.lastApplied, rf.lastIncludedIndex)
+
+	rf.persist(args.Data)
+
+	rf.mu.Unlock()
+	// let the state machine know that it should now use the snapshot
+	applyMsg := raftapi.ApplyMsg{
+		SnapshotValid: true,
+		Snapshot:      args.Data,
+		SnapshotTerm:  args.LastIncludedTerm,
+		SnapshotIndex: args.LastIncludedIndex,
+	}
+	rf.applyCh <- applyMsg
+	rf.mu.Lock()
 }
 
 func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
@@ -568,6 +606,12 @@ func (rf *Raft) sendAppendEntries() {
 			continue
 		}
 		rf.mu.Lock()
+		// the follower's log is too short, so we need to send InstallSnapshot RPC instead of AppendEntries RPC
+		if rf.nextIndex[i] <= rf.lastIncludedIndex {
+			rf.mu.Unlock()
+			go rf.sendInstallSnapshots(i)
+			continue
+		}
 		term := rf.currentTerm
 		prevLogIndex := rf.nextIndex[i] - 1
 		prevLogTerm := rf.Log[rf.logIndex(prevLogIndex)].Term
@@ -699,6 +743,51 @@ func (rf *Raft) sendAppendEntries() {
 	}
 }
 
+func (rf *Raft) sendInstallSnapshots(i int) {
+	rf.mu.Lock()
+	term := rf.currentTerm
+	lastIncludedIndex := rf.lastIncludedIndex
+	lastIncludedTerm := rf.lastIncludedTerm
+	snapshot := rf.persister.ReadSnapshot()
+	rf.mu.Unlock()
+	go func(i int) {
+		args := &InstallSnapshotArgs{
+			Term:              term,
+			LeaderId:          rf.me,
+			LastIncludedIndex: lastIncludedIndex,
+			LastIncludedTerm:  lastIncludedTerm,
+			Data:              snapshot,
+		}
+		reply := &InstallSnapshotReply{}
+		if rf.sendInstallSnapshot(i, args, reply) {
+			rf.mu.Lock()
+			if rf.currentTerm != term || rf.role != Leader {
+				rf.mu.Unlock()
+				return
+			}
+			if reply.Term > rf.currentTerm {
+				rf.currentTerm = reply.Term
+				rf.role = Follower
+				rf.votedFor = -1
+				rf.persist(rf.persister.ReadSnapshot())
+			}
+			if rf.nextIndex[i] < lastIncludedIndex+1 {
+				rf.nextIndex[i] = lastIncludedIndex + 1
+				rf.matchIndex[i] = lastIncludedIndex
+			}
+			rf.mu.Unlock()
+		}
+	}(i)
+	// update nextIndex and matchIndex
+	// rf.mu.Lock()
+	// if rf.nextIndex[i] < lastIncludedIndex+1 {
+	// 	rf.nextIndex[i] = lastIncludedIndex + 1
+	// 	rf.matchIndex[i] = lastIncludedIndex
+	// }
+	// rf.mu.Unlock()
+	//warn: Result-driven not Attempt-driven, we should update nextIndex and matchIndex in the callback of InstallSnapshot RPC, because only when the follower successfully receives and processes the InstallSnapshot RPC, we can be sure that the follower has the snapshot and can update nextIndex and matchIndex accordingly. If we update nextIndex and matchIndex here, there is a risk that the InstallSnapshot RPC fails to send or the follower fails to process it, which may cause nextIndex and matchIndex to be updated incorrectly, leading to log inconsistency between the leader and followers.
+}
+
 func (rf *Raft) applier() {
 	for rf.killed() == false {
 		rf.mu.Lock()
@@ -755,6 +844,12 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
+	// recover last applied index and commit index after restart
+	//warn: === RUN   TestSnapshotInstallCrash3D
+	// Test (3D): install snapshots (crash) (reliable network)...
+	// panic: runtime error: index out of range [-38]
+	rf.commitIndex = max(rf.commitIndex, rf.lastIncludedIndex)
+	rf.lastApplied = max(rf.lastApplied, rf.lastIncludedIndex)
 
 	go rf.applier()
 
