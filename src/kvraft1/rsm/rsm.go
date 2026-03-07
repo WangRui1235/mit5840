@@ -1,6 +1,7 @@
 package rsm
 
 import (
+	"fmt"
 	"sync"
 
 	"6.5840/kvsrv1/rpc"
@@ -8,18 +9,18 @@ import (
 	"6.5840/raft1"
 	"6.5840/raftapi"
 	"6.5840/tester1"
-
 )
 
 var useRaftStateMachine bool // to plug in another raft besided raft1
-
 
 type Op struct {
 	// Your definitions here.
 	// Field names must start with capital letters,
 	// otherwise RPC will break.
+	Me  int
+	Id  int
+	Req any
 }
-
 
 // A server (i.e., ../server.go) that wants to replicate itself calls
 // MakeRSM and must implement the StateMachine interface.  This
@@ -41,6 +42,7 @@ type RSM struct {
 	maxraftstate int // snapshot if log grows this big
 	sm           StateMachine
 	// Your definitions here.
+	waiter map[int]chan any
 }
 
 // servers[] contains the ports of the set of
@@ -64,10 +66,14 @@ func MakeRSM(servers []*labrpc.ClientEnd, me int, persister *tester.Persister, m
 		maxraftstate: maxraftstate,
 		applyCh:      make(chan raftapi.ApplyMsg),
 		sm:           sm,
+		waiter:       make(map[int]chan any),
 	}
 	if !useRaftStateMachine {
 		rsm.rf = raft.Make(servers, me, persister, rsm.applyCh)
 	}
+
+	go rsm.readApplyCh()
+
 	return rsm
 }
 
@@ -75,6 +81,25 @@ func (rsm *RSM) Raft() raftapi.Raft {
 	return rsm.rf
 }
 
+func (rsm *RSM) readApplyCh() any {
+	for msg := range rsm.applyCh {
+		if msg.CommandValid {
+			op := msg.Command.(Op)
+			rep := rsm.sm.DoOp(op.Req)
+
+			if val, ok := rsm.waiter[msg.CommandIndex]; ok {
+				fmt.Printf("Applier: got index %d, op: %+v", msg.CommandIndex, op)
+				select {
+				case val <- rep:
+					fmt.Printf("%d send apply msg to waiter, index: %d\n, n = %d", rsm.me, msg.CommandIndex, op.Req.(Inc))
+				default:
+					fmt.Printf("%d waiter channel is full, index: %d", rsm.me, msg.CommandIndex)
+				}
+			}
+		}
+	}
+	return nil
+}
 
 // Submit a command to Raft, and wait for it to be committed.  It
 // should return ErrWrongLeader if client should find new leader and
@@ -84,7 +109,19 @@ func (rsm *RSM) Submit(req any) (rpc.Err, any) {
 	// Submit creates an Op structure to run a command through Raft;
 	// for example: op := Op{Me: rsm.me, Id: id, Req: req}, where req
 	// is the argument to Submit and id is a unique id for the op.
-
+	op := Op{Me: rsm.me, Req: req}
+	rsm.mu.Lock()
+	index, _, isLeader := rsm.rf.Start(op)
+	fmt.Printf("%d submit op to raft, index: %d, isLeader: %v\n", rsm.me, index, isLeader)
+	rsm.mu.Unlock()
+	if isLeader {
+		ch := make(chan any, 1)
+		rsm.mu.Lock()
+		rsm.waiter[index] = ch
+		rsm.mu.Unlock()
+		op := <-ch
+		return rpc.OK, op
+	}
 	// your code here
 	return rpc.ErrWrongLeader, nil // i'm dead, try another server.
 }
