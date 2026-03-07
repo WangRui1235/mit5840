@@ -427,7 +427,10 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		SnapshotTerm:  args.LastIncludedTerm,
 		SnapshotIndex: args.LastIncludedIndex,
 	}
-	rf.applyCh <- applyMsg
+	// warn: the same reason as in applier(), we need to check rf.killed() before sending applyMsg to applyCh, otherwise it may cause panic: send on closed channel when the tester calls rf.Kill() and closes applyCh while there are still goroutines trying to send applyMsg to applyCh
+	if !rf.killed() {
+		rf.applyCh <- applyMsg
+	}
 	rf.mu.Lock()
 }
 
@@ -480,6 +483,14 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 func (rf *Raft) Kill() {
 	atomic.StoreInt32(&rf.dead, 1)
 	// Your code here, if desired.
+	// warn:The tester calls your Raft's rf.Kill() when it is shutting down a peer.
+	// Raft should close the applyCh so that your rsm learns about the shutdown,
+	// and can exit out of all loops
+	// error:if we don't close applyCh,
+	// error:especially in LAB 4A, the RSM readApplych() 'for msg := range applyCh' loop will never exit,
+	// error:which may cause goroutine leak and make the tester fail due to too many goroutines
+	// error:and cause to 'Fatal: Submit didn't stop after shutdown'
+	close(rf.applyCh)
 }
 
 func (rf *Raft) killed() bool {
@@ -799,7 +810,17 @@ func (rf *Raft) applier() {
 				CommandIndex: rf.lastApplied,
 			}
 			rf.mu.Unlock()
-			rf.applyCh <- applyMsg
+			// warn:applier() here has another race condition;
+			//error: goroutine A (applier):  killed()==false pass
+			// goroutine B (Kill):     dead=1, close(applyCh)
+			// goroutine A (applier):  rf.applyCh <- applyMsg  ← panic: send on closed channel
+			// error: go go test -race -v -run 4A won't pass without this check
+
+			// warn:I thought rf.killed() check and rf.applyCh <- applyMsg are not atomic?
+			// warn: by searching the web, I found that use "recover" to catch the panic caused by sending on closed channel is a common way to handle
+			if !rf.killed() {
+				rf.applyCh <- applyMsg
+			}
 		} else {
 			rf.mu.Unlock()
 			time.Sleep(10 * time.Millisecond)

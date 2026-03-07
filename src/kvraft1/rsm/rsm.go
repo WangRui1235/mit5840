@@ -1,8 +1,9 @@
 package rsm
 
 import (
-	"fmt"
+	//"fmt"
 	"sync"
+	//"time"
 
 	"6.5840/kvsrv1/rpc"
 	"6.5840/labrpc"
@@ -20,6 +21,11 @@ type Op struct {
 	Me  int
 	Id  int
 	Req any
+}
+
+type WaiterInfo struct {
+	waiterchan chan any
+	id         int
 }
 
 // A server (i.e., ../server.go) that wants to replicate itself calls
@@ -42,7 +48,8 @@ type RSM struct {
 	maxraftstate int // snapshot if log grows this big
 	sm           StateMachine
 	// Your definitions here.
-	waiter map[int]chan any
+	waiter map[int]WaiterInfo
+	nextId int
 }
 
 // servers[] contains the ports of the set of
@@ -66,7 +73,8 @@ func MakeRSM(servers []*labrpc.ClientEnd, me int, persister *tester.Persister, m
 		maxraftstate: maxraftstate,
 		applyCh:      make(chan raftapi.ApplyMsg),
 		sm:           sm,
-		waiter:       make(map[int]chan any),
+		waiter:       make(map[int]WaiterInfo),
+		nextId:       0,
 	}
 	if !useRaftStateMachine {
 		rsm.rf = raft.Make(servers, me, persister, rsm.applyCh)
@@ -84,20 +92,43 @@ func (rsm *RSM) Raft() raftapi.Raft {
 func (rsm *RSM) readApplyCh() any {
 	for msg := range rsm.applyCh {
 		if msg.CommandValid {
+			// warn:DoOp may block, so we should not hold the lock when calling it.
+			// warn: op,msg is thread local variable
+			// warn: map is not concurrency safe
 			op := msg.Command.(Op)
 			rep := rsm.sm.DoOp(op.Req)
 
+			rsm.mu.Lock()
 			if val, ok := rsm.waiter[msg.CommandIndex]; ok {
-				fmt.Printf("Applier: got index %d, op: %+v", msg.CommandIndex, op)
-				select {
-				case val <- rep:
-					fmt.Printf("%d send apply msg to waiter, index: %d\n, n = %d", rsm.me, msg.CommandIndex, op.Req.(Inc))
-				default:
-					fmt.Printf("%d waiter channel is full, index: %d", rsm.me, msg.CommandIndex)
+				if msg.Command.(Op).Id != val.id {
+					for k, v := range rsm.waiter {
+						if k >= msg.CommandIndex {
+							close(v.waiterchan)
+							delete(rsm.waiter, k)
+						}
+					}
+					rsm.mu.Unlock()
+					continue
+				} else {
+					//fmt.Printf("Applier: got index %d, op: %+v\n", msg.CommandIndex, op)
+					select {
+					case val.waiterchan <- rep:
+						//fmt.Printf("%d send apply msg to waiter, index: %d, n = %d\n", rsm.me, msg.CommandIndex, op.Req.(Inc))
+					default:
+						//fmt.Printf("%d waiter channel is full, index: %d\n", rsm.me, msg.CommandIndex)
+					}
 				}
 			}
+			rsm.mu.Unlock()
 		}
 	}
+	// warn:when applyCh is closed, we should close all waiter channels to avoid goroutine leak.
+	rsm.mu.Lock()
+	for k, v := range rsm.waiter {
+		close(v.waiterchan)
+		delete(rsm.waiter, k)
+	}
+	rsm.mu.Unlock()
 	return nil
 }
 
@@ -109,19 +140,30 @@ func (rsm *RSM) Submit(req any) (rpc.Err, any) {
 	// Submit creates an Op structure to run a command through Raft;
 	// for example: op := Op{Me: rsm.me, Id: id, Req: req}, where req
 	// is the argument to Submit and id is a unique id for the op.
-	op := Op{Me: rsm.me, Req: req}
 	rsm.mu.Lock()
+	myid := rsm.nextId
+	rsm.nextId++
+	op := Op{Me: rsm.me, Id: myid, Req: req}
 	index, _, isLeader := rsm.rf.Start(op)
-	fmt.Printf("%d submit op to raft, index: %d, isLeader: %v\n", rsm.me, index, isLeader)
-	rsm.mu.Unlock()
+	//fmt.Printf("%d submit op to raft, index: %d, isLeader: %v\n", rsm.me, index, isLeader)
 	if isLeader {
-		ch := make(chan any, 1)
-		rsm.mu.Lock()
+		ch := WaiterInfo{
+			waiterchan: make(chan any, 1),
+			id:         myid,
+		}
 		rsm.waiter[index] = ch
 		rsm.mu.Unlock()
-		op := <-ch
+		// error:stuck in this line:goroutine 1675 [chan receive]:
+		// error:6.5840/kvraft1/rsm.(*RSM).Submit(0xc000138d70, {0x623500?, 0x896b20?})
+		// error:6.5840/src/kvraft1/rsm/rsm.go:155 +0x18b
+		// the reason is that ch.applyCh is not closed when the server is killed.
+		op, ok := <-ch.waiterchan
+		if !ok {
+			return rpc.ErrWrongLeader, nil
+		}
 		return rpc.OK, op
 	}
 	// your code here
+	rsm.mu.Unlock()
 	return rpc.ErrWrongLeader, nil // i'm dead, try another server.
 }
