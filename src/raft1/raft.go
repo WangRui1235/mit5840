@@ -57,6 +57,8 @@ type Raft struct {
 	lastIncludedTerm  int
 
 	applyCh chan raftapi.ApplyMsg
+	// 4B data race detected,only sender can close channel
+	killCh chan struct{}
 }
 
 // return currentTerm and whether this server
@@ -384,11 +386,14 @@ type InstallSnapshotReply struct {
 
 func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
 	rf.mu.Lock()
-	defer rf.mu.Unlock()
+	// error: cannot defer close(rf.applyCh) here
+	//defer close(rf.applyCh)
+	//defer rf.mu.Unlock()
 
 	reply.Term = rf.currentTerm
 
 	if args.Term < rf.currentTerm {
+		rf.mu.Unlock()
 		return
 	} else if args.Term > rf.currentTerm {
 		rf.currentTerm = args.Term
@@ -398,6 +403,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 
 	rf.lastHeartbeat = time.Now()
 	if args.LastIncludedIndex <= rf.lastIncludedIndex {
+		rf.mu.Unlock()
 		return
 	}
 
@@ -428,10 +434,14 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		SnapshotIndex: args.LastIncludedIndex,
 	}
 	// warn: the same reason as in applier(), we need to check rf.killed() before sending applyMsg to applyCh, otherwise it may cause panic: send on closed channel when the tester calls rf.Kill() and closes applyCh while there are still goroutines trying to send applyMsg to applyCh
-	if !rf.killed() {
-		rf.applyCh <- applyMsg
+	// if !rf.killed() {
+	// 	rf.applyCh <- applyMsg
+	// }
+	select {
+	case rf.applyCh <- applyMsg:
+	case <-rf.killCh:
+		return
 	}
-	rf.mu.Lock()
 }
 
 func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
@@ -490,7 +500,7 @@ func (rf *Raft) Kill() {
 	// error:especially in LAB 4A, the RSM readApplych() 'for msg := range applyCh' loop will never exit,
 	// error:which may cause goroutine leak and make the tester fail due to too many goroutines
 	// error:and cause to 'Fatal: Submit didn't stop after shutdown'
-	close(rf.applyCh)
+	close(rf.killCh)
 }
 
 func (rf *Raft) killed() bool {
@@ -800,6 +810,7 @@ func (rf *Raft) sendInstallSnapshots(i int) {
 }
 
 func (rf *Raft) applier() {
+	defer close(rf.applyCh)
 	for rf.killed() == false {
 		rf.mu.Lock()
 		if rf.commitIndex > rf.lastApplied {
@@ -818,12 +829,24 @@ func (rf *Raft) applier() {
 
 			// warn:I thought rf.killed() check and rf.applyCh <- applyMsg are not atomic?
 			// warn: by searching the web, I found that use "recover" to catch the panic caused by sending on closed channel is a common way to handle
-			if !rf.killed() {
-				rf.applyCh <- applyMsg
+			// error: but still have data race!only sender can close channel, so we need to check rf.killed() before sending applyMsg to applyCh
+			// if !rf.killed() {
+			// 	rf.applyCh <- applyMsg
+			// }
+			// error: trigger the race condition in 4B
+			// safeSend(rf.applyCh, applyMsg)
+			select {
+			case rf.applyCh <- applyMsg:
+			case <-rf.killCh:
+				return
 			}
 		} else {
 			rf.mu.Unlock()
-			time.Sleep(10 * time.Millisecond)
+			select {
+			case <-time.After(10 * time.Millisecond):
+			case <-rf.killCh:
+				return
+			}
 		}
 	}
 }
@@ -851,6 +874,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 
 	// Your initialization code here (3A, 3B, 3C).
 	rf.applyCh = applyCh
+	rf.killCh = make(chan struct{})
 	rf.currentTerm = 0
 	rf.votedFor = -1
 	rf.commitIndex = 0

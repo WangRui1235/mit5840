@@ -157,11 +157,11 @@ func (rsm *RSM) Submit(req any) (rpc.Err, any) {
 		// error:6.5840/kvraft1/rsm.(*RSM).Submit(0xc000138d70, {0x623500?, 0x896b20?})
 		// error:6.5840/src/kvraft1/rsm/rsm.go:155 +0x18b
 		// the reason is that ch.applyCh is not closed when the server is killed.
-		op, ok := <-ch.waiterchan
+		result, ok := <-ch.waiterchan
 		if !ok {
 			return rpc.ErrWrongLeader, nil
 		}
-		return rpc.OK, op
+		return rpc.OK, result
 	}
 	// your code here
 	rsm.mu.Unlock()
