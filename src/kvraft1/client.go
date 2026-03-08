@@ -46,6 +46,7 @@ func (ck *Clerk) Get(key string) (string, rpc.Tversion, rpc.Err) {
 				return reply.Value, reply.Version, reply.Err
 			}
 		}
+		ck.chosen = (ck.chosen + 1) % len(ck.servers)
 		time.Sleep(100 * time.Millisecond)
 	}
 	// You will have to modify this function.
@@ -97,6 +98,7 @@ func (ck *Clerk) Put(key string, value string, version rpc.Tversion) rpc.Err {
 			}
 		}
 		retried = true
+		ck.chosen = (ck.chosen + 1) % len(ck.servers)
 		// warn: kvraft_test.go:161: Operations completed too slowly 54.147334ms/op > 33.333333ms/op
 		// have no relation with this line of code
 		time.Sleep(100 * time.Millisecond)

@@ -91,6 +91,19 @@ func (rsm *RSM) Raft() raftapi.Raft {
 
 func (rsm *RSM) readApplyCh() any {
 	for msg := range rsm.applyCh {
+		// warn:
+		if msg.SnapshotValid {
+			rsm.sm.Restore(msg.Snapshot)
+			rsm.mu.Lock()
+			for k, v := range rsm.waiter {
+				if k <= msg.SnapshotIndex {
+					close(v.waiterchan)
+					delete(rsm.waiter, k)
+				}
+			}
+			rsm.mu.Unlock()
+			continue
+		}
 		if msg.CommandValid {
 			// warn:DoOp may block, so we should not hold the lock when calling it.
 			// warn: op,msg is thread local variable
