@@ -158,7 +158,7 @@ func (rsm *RSM) Submit(req any) (rpc.Err, any) {
 	myid := rsm.nextId
 	rsm.nextId++
 	op := Op{Me: rsm.me, Id: myid, Req: req}
-	index, _, isLeader := rsm.rf.Start(op)
+	index, term, isLeader := rsm.rf.Start(op)
 	//fmt.Printf("%d submit op to raft, index: %d, isLeader: %v\n", rsm.me, index, isLeader)
 	if isLeader {
 		ch := WaiterInfo{
@@ -171,19 +171,24 @@ func (rsm *RSM) Submit(req any) (rpc.Err, any) {
 		// error:6.5840/kvraft1/rsm.(*RSM).Submit(0xc000138d70, {0x623500?, 0x896b20?})
 		// error:6.5840/src/kvraft1/rsm/rsm.go:155 +0x18b
 		// the reason is that ch.applyCh is not closed when the server is killed.
-		// this select
-		select {
-		case result, ok := <-ch.waiterchan:
-			if !ok {
-				return rpc.ErrWrongLeader, nil
+		//
+		for {
+			select {
+			case result, ok := <-ch.waiterchan:
+				if !ok {
+					return rpc.ErrWrongLeader, nil
+				}
+				return rpc.OK, result
+			// warn: if node is not majority, it may never apply the command, so we should set a timeout to avoid goroutine leak.
+			case <-time.After(50 * time.Millisecond):
+				currentTerm, currentLeader := rsm.rf.GetState()
+				if !currentLeader || currentTerm != term {
+					rsm.mu.Lock()
+					delete(rsm.waiter, index)
+					rsm.mu.Unlock()
+					return rpc.ErrWrongLeader, nil
+				}
 			}
-			return rpc.OK, result
-		// warn: if node is not majority, it may never apply the command, so we should set a timeout to avoid goroutine leak.
-		case <-time.After(500 * time.Millisecond):
-			rsm.mu.Lock()
-			delete(rsm.waiter, index)
-			rsm.mu.Unlock()
-			return rpc.ErrWrongLeader, nil
 		}
 	}
 	// your code here

@@ -2,3 +2,4 @@ pkg/
 *-handin.tar.gz
 config/
 .vscode/
+tmp.go
