@@ -3,6 +3,7 @@ package rsm
 import (
 	//"fmt"
 	"sync"
+	"time"
 	//"time"
 
 	"6.5840/kvsrv1/rpc"
@@ -170,11 +171,20 @@ func (rsm *RSM) Submit(req any) (rpc.Err, any) {
 		// error:6.5840/kvraft1/rsm.(*RSM).Submit(0xc000138d70, {0x623500?, 0x896b20?})
 		// error:6.5840/src/kvraft1/rsm/rsm.go:155 +0x18b
 		// the reason is that ch.applyCh is not closed when the server is killed.
-		result, ok := <-ch.waiterchan
-		if !ok {
+		// this select
+		select {
+		case result, ok := <-ch.waiterchan:
+			if !ok {
+				return rpc.ErrWrongLeader, nil
+			}
+			return rpc.OK, result
+		// warn: if node is not majority, it may never apply the command, so we should set a timeout to avoid goroutine leak.
+		case <-time.After(500 * time.Millisecond):
+			rsm.mu.Lock()
+			delete(rsm.waiter, index)
+			rsm.mu.Unlock()
 			return rpc.ErrWrongLeader, nil
 		}
-		return rpc.OK, result
 	}
 	// your code here
 	rsm.mu.Unlock()

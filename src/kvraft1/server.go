@@ -1,6 +1,7 @@
 package kvraft
 
 import (
+	//"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -78,12 +79,13 @@ func (kv *KVServer) PutOp(args *rpc.PutArgs) (reply *rpc.PutReply) {
 	return reply
 }
 func (kv *KVServer) DoOp(req any) any {
-	// Your code here
+	// gob decode into value type not pointer type
+	//fmt.Printf("DoOp req type: %T\n", req)
 	switch req := req.(type) {
-	case *rpc.GetArgs:
-		return kv.GetOp(req)
-	case *rpc.PutArgs:
-		return kv.PutOp(req)
+	case rpc.GetArgs:
+		return kv.GetOp(&req)
+	case rpc.PutArgs:
+		return kv.PutOp(&req)
 	}
 	return nil
 }
@@ -101,7 +103,7 @@ func (kv *KVServer) Get(args *rpc.GetArgs, reply *rpc.GetReply) {
 	// Your code here. Use kv.rsm.Submit() to submit args
 	// You can use go's type casts to turn the any return value
 	// of Submit() into a GetReply: rep.(rpc.GetReply)
-	err, result := kv.rsm.Submit(args)
+	err, result := kv.rsm.Submit(*args)
 	if err == rpc.ErrWrongLeader {
 		reply.Err = rpc.ErrWrongLeader
 		return
@@ -121,7 +123,7 @@ func (kv *KVServer) Put(args *rpc.PutArgs, reply *rpc.PutReply) {
 	// Your code here. Use kv.rsm.Submit() to submit args
 	// You can use go's type casts to turn the any return value
 	// of Submit() into a PutReply: rep.(rpc.PutReply)
-	err, result := kv.rsm.Submit(args)
+	err, result := kv.rsm.Submit(*args)
 	if err == rpc.ErrWrongLeader {
 		reply.Err = rpc.ErrWrongLeader
 		return
